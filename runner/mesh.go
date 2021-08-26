@@ -16,7 +16,6 @@ type mesh struct {
 	tiles              []*tile
 	tilesPorts         [][]sim.Port
 	memLowModuleFinder *mem.InterleavedLowModuleFinder
-	meshConn           *sim.DirectConnection
 }
 
 type meshBuilder struct {
@@ -47,6 +46,8 @@ type meshBuilder struct {
 	dmaEngine               *cp.DMAEngine
 	globalStorage           *mem.Storage
 	pageMigrationController *pagemigrationcontroller.PageMigrationController
+
+	oneConn *sim.DirectConnection
 }
 
 func makeMeshBuilder() meshBuilder {
@@ -172,6 +173,11 @@ func (b meshBuilder) withGlobalStorage(s *mem.Storage) meshBuilder {
 	return b
 }
 
+func (b meshBuilder) withOneConnection(c *sim.DirectConnection) meshBuilder {
+	b.oneConn = c
+	return b
+}
+
 func (b *meshBuilder) separatePeripheralPorts(m *mesh, ports []sim.Port) {
 	b.numTile = b.tileHeight * b.tileWidth
 	if b.numTile <= 0 {
@@ -211,9 +217,6 @@ func (b *meshBuilder) Build(
 
 	m := mesh{}
 	b.separatePeripheralPorts(&m, periphPorts)
-
-	m.meshConn = sim.NewDirectConnection(
-		b.gpuName+"meshConn", b.engine, b.freq)
 
 	b.buildTiles(&m)
 
@@ -261,7 +264,7 @@ func (b *meshBuilder) buildTiles(m *mesh) {
 		for y := 0; y < b.tileWidth; y++ {
 			idx := x*b.tileWidth + y
 			for _, port := range m.tilesPorts[idx] {
-				m.meshConn.PlugIn(port, 128)
+				b.oneConn.PlugIn(port, 64)
 			}
 		}
 	}

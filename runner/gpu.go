@@ -45,7 +45,7 @@ type WaferScaleGPUBuilder struct {
 	pageMigrationController *pagemigrationcontroller.PageMigrationController
 	globalStorage           *mem.Storage
 
-	periphConn *sim.DirectConnection
+	oneConn *sim.DirectConnection
 
 	tileWidth  int
 	tileHeight int
@@ -222,13 +222,13 @@ func (b *WaferScaleGPUBuilder) createGPU(name string, id uint64) {
 }
 
 func (b *WaferScaleGPUBuilder) connectPeriphComponents() {
-	b.periphConn = sim.NewDirectConnection(
-		b.gpuName+"PeriphConn", b.engine, b.freq)
+	b.oneConn = sim.NewDirectConnection(
+		b.gpuName+"oneConn", b.engine, b.freq)
 
 	/* CP <-> Driver, RDMA, PMC */
-	b.periphConn.PlugIn(b.cp.ToDriver, 1)
-	b.periphConn.PlugIn(b.cp.ToRDMA, 4)
-	b.periphConn.PlugIn(b.cp.ToPMC, 4)
+	b.oneConn.PlugIn(b.cp.ToDriver, 1)
+	b.oneConn.PlugIn(b.cp.ToRDMA, 4)
+	b.oneConn.PlugIn(b.cp.ToPMC, 4)
 
 	/* CP <-> Mesh(CUs, TLBs, ATs, ROBs) */
 	b.ToMesh = append(b.ToMesh, b.cp.ToCUs)
@@ -238,7 +238,7 @@ func (b *WaferScaleGPUBuilder) connectPeriphComponents() {
 
 	/* RDMA(Control) <-> CP */
 	b.cp.RDMA = b.rdmaEngine.CtrlPort
-	b.periphConn.PlugIn(b.cp.RDMA, 1)
+	b.oneConn.PlugIn(b.cp.RDMA, 1)
 
 	/* DMA(Control) <-> Mesh(CP.ToDMA) */
 	/* DMA(ToMem) <-> Mesh(SRAMs) */
@@ -250,7 +250,7 @@ func (b *WaferScaleGPUBuilder) connectPeriphComponents() {
 	/* PMC(LocalMem) <-> Mesh(SRAM) */
 	pmcControlPort := b.pageMigrationController.GetPortByName("Control")
 	b.cp.PMC = pmcControlPort
-	b.periphConn.PlugIn(pmcControlPort, 1)
+	b.oneConn.PlugIn(pmcControlPort, 1)
 	b.ToMesh = append(b.ToMesh,
 		b.pageMigrationController.GetPortByName("LocalMem"))
 
@@ -258,7 +258,7 @@ func (b *WaferScaleGPUBuilder) connectPeriphComponents() {
 	/* L2TLB(Bottom) <-> MMU ; definied in populateExternalPorts */
 	/* L2TLB(Control) <-> CP */
 	l2TLBCtrlPort := b.l2TLB.GetPortByName("Control")
-	b.periphConn.PlugIn(l2TLBCtrlPort, 1)
+	b.oneConn.PlugIn(l2TLBCtrlPort, 1)
 	b.cp.TLBs = append(b.cp.TLBs, l2TLBCtrlPort)
 	b.ToMesh = append(b.ToMesh, b.l2TLB.GetPortByName("Top"))
 }
@@ -283,7 +283,8 @@ func (b *WaferScaleGPUBuilder) buildMesh(name string) {
 		withLog2MemoryBankInterleavingSize(b.log2MemoryBankInterleavingSize).
 		withDMAEngine(b.dmaEngine).
 		withPageMigrationController(b.pageMigrationController).
-		withGlobalStorage(b.globalStorage)
+		withGlobalStorage(b.globalStorage).
+		withOneConnection(b.oneConn)
 	b.mesh = meshBuilder.Build(name, b.ToMesh)
 }
 
