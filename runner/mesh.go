@@ -9,7 +9,6 @@ import (
 	"gitlab.com/akita/mem/v2/vm/tlb"
 	"gitlab.com/akita/mgpusim/v2/timing/cp"
 	"gitlab.com/akita/mgpusim/v2/timing/pagemigrationcontroller"
-	meshNetwork "gitlab.com/akita/noc/v2/networking/mesh"
 	"gitlab.com/akita/util/v2/tracing"
 )
 
@@ -17,7 +16,7 @@ type mesh struct {
 	tiles              []*tile
 	tilesPorts         [][]sim.Port
 	memLowModuleFinder *mem.InterleavedLowModuleFinder
-	meshConn           *meshNetwork.Connector
+	meshConn           *sim.DirectConnection
 }
 
 type meshBuilder struct {
@@ -213,14 +212,10 @@ func (b *meshBuilder) Build(
 	m := mesh{}
 	b.separatePeripheralPorts(&m, periphPorts)
 
-	m.meshConn = meshNetwork.NewConnector().
-		WithEngine(b.engine).
-		WithFreq(b.freq)
-	m.meshConn.CreateNetwork(b.name)
+	m.meshConn = sim.NewDirectConnection(
+		b.gpuName+"meshConn", b.engine, b.freq)
 
 	b.buildTiles(&m)
-
-	m.meshConn.EstablishNetwork()
 
 	return &m
 }
@@ -265,7 +260,9 @@ func (b *meshBuilder) buildTiles(m *mesh) {
 	for x := 0; x < b.tileHeight; x++ {
 		for y := 0; y < b.tileWidth; y++ {
 			idx := x*b.tileWidth + y
-			m.meshConn.AddTile([3]int{x, y, 0}, m.tilesPorts[idx])
+			for _, port := range m.tilesPorts[idx] {
+				m.meshConn.PlugIn(port, 128)
+			}
 		}
 	}
 }
