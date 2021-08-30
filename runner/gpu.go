@@ -230,10 +230,10 @@ func (b *WaferScaleGPUBuilder) connectPeriphComponents() {
 	b.periphConn.PlugIn(b.cp.ToRDMA, 4)
 	b.periphConn.PlugIn(b.cp.ToPMC, 4)
 
-	/* CP <-> Mesh(CUs, TLBs, ATs, ROBs) */
+	/* CP <-> Mesh(CUs, TLBs, ATs, ROBs, Caches) */
 	b.ToMesh = append(b.ToMesh, b.cp.ToCUs)
 	b.ToMesh = append(b.ToMesh, b.cp.ToTLBs)
-	// b.ToMesh = append(b.ToMesh, b.cp.ToCaches)
+	b.ToMesh = append(b.ToMesh, b.cp.ToCaches)
 	b.ToMesh = append(b.ToMesh, b.cp.ToAddressTranslators)
 
 	/* RDMA(Control) <-> CP */

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"gitlab.com/akita/akita/v2/sim"
+	"gitlab.com/akita/mem/v2/cache/writethrough"
 	"gitlab.com/akita/mem/v2/idealmemcontroller"
 	"gitlab.com/akita/mem/v2/mem"
 	"gitlab.com/akita/mem/v2/vm/addresstranslator"
@@ -29,6 +30,9 @@ type tile struct {
 	l1vTLB *tlb.TLB
 	l1sTLB *tlb.TLB
 	l1iTLB *tlb.TLB
+
+	l1sCache *writethrough.Cache
+	l1iCache *writethrough.Cache
 
 	mem *idealmemcontroller.Comp
 }
@@ -134,10 +138,12 @@ func (b *tileBuilder) buildComponents(t *tile) {
 	b.buildL1STLB(t)
 	b.buildL1SAddressTranslator(t)
 	b.buildL1SReorderBuffer(t)
+	b.buildL1SCache(t)
 
 	b.buildL1ITLB(t)
 	b.buildL1IAddressTranslator(t)
 	b.buildL1IReorderBuffer(t)
+	b.buildL1ICache(t)
 }
 
 func (b *tileBuilder) connectComponents(sa *tile) {
@@ -174,6 +180,7 @@ func (b *tileBuilder) connectScalarMem(t *tile) {
 	rob := t.l1sROB
 	at := t.l1sAT
 	tlb := t.l1sTLB
+	l1s := t.l1sCache
 
 	atTopPort := at.GetPortByName("Top")
 	rob.BottomUnit = atTopPort
@@ -184,6 +191,12 @@ func (b *tileBuilder) connectScalarMem(t *tile) {
 	b.connectWithDirectConnection(
 		at.GetPortByName("Translation"), tlbTopPort, 8)
 
+	at.SetLowModuleFinder(&mem.SingleLowModuleFinder{
+		LowModule: l1s.GetPortByName("Top"),
+	})
+	b.connectWithDirectConnection(
+		l1s.GetPortByName("Top"), at.GetPortByName("Bottom"), 8)
+
 	b.connectWithDirectConnection(rob.GetPortByName("Top"), cu.ToScalarMem, 8)
 	cu.ScalarMem = rob.GetPortByName("Top")
 }
@@ -193,10 +206,20 @@ func (b *tileBuilder) connectInstMem(t *tile) {
 	rob := t.l1iROB
 	at := t.l1iAT
 	tlb := t.l1iTLB
+	l1i := t.l1iCache
+
+	l1iTopPort := l1i.GetPortByName("Top")
+	rob.BottomUnit = l1iTopPort
+	b.connectWithDirectConnection(rob.GetPortByName("Bottom"), l1iTopPort, 8)
 
 	atTopPort := at.GetPortByName("Top")
-	rob.BottomUnit = atTopPort
-	b.connectWithDirectConnection(rob.GetPortByName("Bottom"), atTopPort, 8)
+	l1i.SetLowModuleFinder(&mem.SingleLowModuleFinder{
+		LowModule: atTopPort,
+	})
+	b.connectWithDirectConnection(l1i.GetPortByName("Bottom"), atTopPort, 8)
+
+	// rob.BottomUnit = atTopPort
+	// b.connectWithDirectConnection(rob.GetPortByName("Bottom"), atTopPort, 8)
 
 	tlbTopPort := tlb.GetPortByName("Top")
 	at.SetTranslationProvider(tlbTopPort)
@@ -401,5 +424,54 @@ func (b *tileBuilder) buildL1ITLB(t *tile) {
 
 	if b.visTracer != nil {
 		tracing.CollectTrace(tlb, b.visTracer)
+	}
+}
+
+func (b *tileBuilder) buildL1SCache(t *tile) {
+	builder := writethrough.NewBuilder().
+		WithEngine(b.engine).
+		WithFreq(b.freq).
+		WithBankLatency(1).
+		WithNumBanks(1).
+		WithLog2BlockSize(b.log2CacheLineSize).
+		WithWayAssociativity(4).
+		WithNumMSHREntry(16).
+		WithTotalByteSize(16 * mem.KB) // could be divided by 4
+
+	name := fmt.Sprintf("%s.L1SCache", b.name)
+	cache := builder.Build(name)
+	t.l1sCache = cache
+
+	if b.visTracer != nil {
+		tracing.CollectTrace(cache, b.visTracer)
+	}
+
+	if b.memTracer != nil {
+		tracing.CollectTrace(cache, b.memTracer)
+	}
+}
+
+func (b *tileBuilder) buildL1ICache(t *tile) {
+	builder := writethrough.NewBuilder().
+		WithEngine(b.engine).
+		WithFreq(b.freq).
+		WithBankLatency(1).
+		WithNumBanks(1).
+		WithLog2BlockSize(b.log2CacheLineSize).
+		WithWayAssociativity(4).
+		WithNumMSHREntry(16).
+		WithTotalByteSize(32 * mem.KB). // could be divided by 4
+		WithNumReqsPerCycle(4)
+
+	name := fmt.Sprintf("%s.L1ICache", b.name)
+	cache := builder.Build(name)
+	t.l1iCache = cache
+
+	if b.visTracer != nil {
+		tracing.CollectTrace(cache, b.visTracer)
+	}
+
+	if b.memTracer != nil {
+		tracing.CollectTrace(cache, b.memTracer)
 	}
 }

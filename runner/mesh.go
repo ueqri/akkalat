@@ -257,7 +257,7 @@ func (b *meshBuilder) buildTiles(m *mesh) {
 	}
 
 	b.buildMemoryLowModules(m)
-	b.fillATsLowModules(m)
+	b.fillATsAndCachesLowModules(m)
 	b.fillL1TLBLowModules(m)
 	b.exportTilesPorts(m)
 	b.populateMeshComponents(m)
@@ -294,6 +294,7 @@ func (b *meshBuilder) exportTilesPorts(m *mesh) {
 	b.exportCUs(m)
 	b.exportROBs(m)
 	b.exportATs(m)
+	b.exportCaches(m)
 	b.exportSRAMs(m)
 	b.exportL1TLBs(m)
 }
@@ -340,11 +341,8 @@ func (b *meshBuilder) exportATs(m *mesh) {
 		m.tilesPorts[idx] = append(m.tilesPorts[idx], ctrlPort)
 		b.cp.AddressTranslators = append(b.cp.AddressTranslators, ctrlPort)
 
-		/* L1sAT(Bottom) <-> Mesh Memory(Top) */
 		/* L1sAT(Control) <-> CP */
-		bottom = t.l1sAT.GetPortByName("Bottom")
 		ctrlPort = t.l1sAT.GetPortByName("Control")
-		m.tilesPorts[idx] = append(m.tilesPorts[idx], bottom)
 		m.tilesPorts[idx] = append(m.tilesPorts[idx], ctrlPort)
 		b.cp.AddressTranslators = append(b.cp.AddressTranslators, ctrlPort)
 
@@ -362,10 +360,28 @@ func (b *meshBuilder) exportSRAMs(m *mesh) {
 	var top sim.Port
 	for idx, t := range m.tiles {
 		/* Mesh Memory(Top) <-> L1vAT(Bottom) */
-		/* Mesh Memory(Top) <-> L1sAT(Bottom) */
+		/* Mesh Memory(Top) <-> L1sCache(Bottom) */
 		/* Mesh Memory(Top) <-> L1iAT(Bottom) */
 		top = t.mem.GetPortByName("Top")
 		m.tilesPorts[idx] = append(m.tilesPorts[idx], top)
+	}
+}
+
+func (b *meshBuilder) exportCaches(m *mesh) {
+	var bottom, ctrlPort sim.Port
+	for idx, t := range m.tiles {
+		/* L1sCache(Bottom) <-> Mesh Memory(Top) */
+		/* L1sCache(Control) <-> CP */
+		bottom = t.l1sCache.GetPortByName("Bottom")
+		ctrlPort = t.l1sCache.GetPortByName("Control")
+		m.tilesPorts[idx] = append(m.tilesPorts[idx], bottom)
+		m.tilesPorts[idx] = append(m.tilesPorts[idx], ctrlPort)
+		b.cp.L1SCaches = append(b.cp.L1SCaches, ctrlPort)
+
+		/* L1iCache(Control) <-> CP */
+		ctrlPort = t.l1iCache.GetPortByName("Control")
+		m.tilesPorts[idx] = append(m.tilesPorts[idx], ctrlPort)
+		b.cp.L1ICaches = append(b.cp.L1ICaches, ctrlPort)
 	}
 }
 
@@ -402,6 +418,7 @@ func (b *meshBuilder) populateMeshComponents(m *mesh) {
 	b.populateCUs(m)
 	b.populateROBs(m)
 	b.populateATs(m)
+	b.populateCaches(m)
 	b.populateSRAMs(m)
 	b.populateL1TLBs(m)
 }
@@ -450,6 +467,13 @@ func (b *meshBuilder) populateSRAMs(m *mesh) {
 	}
 }
 
+func (b *meshBuilder) populateCaches(m *mesh) {
+	for _, t := range m.tiles {
+		b.gpuPtr.L1SCaches = append(b.gpuPtr.L1SCaches, t.l1sCache)
+		b.gpuPtr.L1ICaches = append(b.gpuPtr.L1ICaches, t.l1iCache)
+	}
+}
+
 func (b *meshBuilder) fillL1TLBLowModules(m *mesh) {
 	for _, t := range m.tiles {
 		t.l1vTLB.LowModule = b.l2TLB.GetPortByName("Top")
@@ -458,10 +482,11 @@ func (b *meshBuilder) fillL1TLBLowModules(m *mesh) {
 	}
 }
 
-func (b *meshBuilder) fillATsLowModules(m *mesh) {
+func (b *meshBuilder) fillATsAndCachesLowModules(m *mesh) {
 	for _, t := range m.tiles {
 		t.l1vAT.SetLowModuleFinder(m.memLowModuleFinder)
-		t.l1sAT.SetLowModuleFinder(m.memLowModuleFinder)
+		// t.l1sAT.SetLowModuleFinder(m.memLowModuleFinder)
+		t.l1sCache.SetLowModuleFinder(m.memLowModuleFinder)
 		t.l1iAT.SetLowModuleFinder(m.memLowModuleFinder)
 	}
 }
