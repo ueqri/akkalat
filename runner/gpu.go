@@ -58,8 +58,8 @@ type WaferScaleGPUBuilder struct {
 func MakeWaferScaleGPUBuilder() WaferScaleGPUBuilder {
 	b := WaferScaleGPUBuilder{
 		freq:                           1 * sim.GHz,
-		tileWidth:                      4,
-		tileHeight:                     4,
+		tileWidth:                      32,
+		tileHeight:                     32,
 		numMemoryBank:                  16,
 		log2CacheLineSize:              6,
 		log2PageSize:                   12,
