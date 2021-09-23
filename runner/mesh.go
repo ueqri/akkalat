@@ -247,6 +247,11 @@ func (b *meshBuilder) Build(
 	m.meshConn = meshNetwork.NewConnector().
 		WithEngine(b.engine).
 		WithFreq(b.freq)
+
+	if b.enableVisTracing {
+		m.meshConn = m.meshConn.WithVisTracer(b.visTracer)
+	}
+
 	m.meshConn.CreateNetwork(b.name)
 
 	b.buildTiles(&m)
@@ -269,11 +274,7 @@ func (b *meshBuilder) buildTiles(m *mesh) {
 		tileBuilder = tileBuilder.withIsaDebugging()
 	}
 
-	if b.enableOnlyMeshTracing {
-		tileBuilder = tileBuilder.withOnlyMeshTracing()
-	}
-
-	if b.enableVisTracing {
+	if b.enableVisTracing && !b.enableOnlyMeshTracing {
 		tileBuilder = tileBuilder.withVisTracer(b.visTracer)
 	}
 
