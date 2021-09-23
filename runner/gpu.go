@@ -26,12 +26,13 @@ type WaferScaleGPUBuilder struct {
 	log2CacheLineSize              uint64
 	log2MemoryBankInterleavingSize uint64
 
-	enableISADebugging bool
-	enableMemTracing   bool
-	enableVisTracing   bool
-	visTracer          tracing.Tracer
-	memTracer          tracing.Tracer
-	monitor            *monitoring.Monitor
+	enableOnlyMeshTracing bool
+	enableISADebugging    bool
+	enableMemTracing      bool
+	enableVisTracing      bool
+	visTracer             tracing.Tracer
+	memTracer             tracing.Tracer
+	monitor               *monitoring.Monitor
 
 	gpuName string
 	gpu     *GPU
@@ -65,6 +66,7 @@ func MakeWaferScaleGPUBuilder() WaferScaleGPUBuilder {
 		log2PageSize:                   12,
 		log2MemoryBankInterleavingSize: 12,
 		memorySize:                     4 * mem.GB,
+		enableOnlyMeshTracing:          true,
 	}
 	return b
 }
@@ -284,6 +286,11 @@ func (b *WaferScaleGPUBuilder) buildMesh(name string) {
 		withDMAEngine(b.dmaEngine).
 		withPageMigrationController(b.pageMigrationController).
 		withGlobalStorage(b.globalStorage)
+
+	if b.enableOnlyMeshTracing {
+		meshBuilder = meshBuilder.withOnlyMeshTracing()
+	}
+
 	b.mesh = meshBuilder.Build(name, b.ToMesh)
 }
 
@@ -321,7 +328,7 @@ func (b *WaferScaleGPUBuilder) buildDMAEngine() {
 		b.engine,
 		nil)
 
-	if b.enableVisTracing {
+	if b.enableVisTracing && !b.enableOnlyMeshTracing {
 		tracing.CollectTrace(b.dmaEngine, b.visTracer)
 	}
 
@@ -367,7 +374,7 @@ func (b *WaferScaleGPUBuilder) buildL2TLB() {
 	b.l2TLB = builder.Build(fmt.Sprintf("%s.L2TLB", b.gpuName))
 	b.gpu.L2TLBs = append(b.gpu.L2TLBs, b.l2TLB)
 
-	if b.enableVisTracing {
+	if b.enableVisTracing && !b.enableOnlyMeshTracing {
 		tracing.CollectTrace(b.l2TLB, b.visTracer)
 	}
 

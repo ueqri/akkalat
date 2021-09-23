@@ -48,6 +48,7 @@ type tileBuilder struct {
 	memLatency        int
 
 	isaDebugging  bool
+	traceOnlyMesh bool
 	visTracer     tracing.Tracer
 	memTracer     tracing.Tracer
 	globalStorage *mem.Storage
@@ -60,6 +61,7 @@ func makeTileBuilder() tileBuilder {
 		freq:              1 * sim.GHz,
 		log2CacheLineSize: 6,
 		log2PageSize:      12,
+		traceOnlyMesh:     false,
 	}
 	return b
 }
@@ -95,6 +97,11 @@ func (b tileBuilder) withLog2PageSize(
 
 func (b tileBuilder) withIsaDebugging() tileBuilder {
 	b.isaDebugging = true
+	return b
+}
+
+func (b tileBuilder) withOnlyMeshTracing() tileBuilder {
+	b.traceOnlyMesh = true
 	return b
 }
 
@@ -265,7 +272,7 @@ func (b *tileBuilder) buildCU(t *tile) {
 		tracing.CollectTrace(computeUnit, isaDebugger)
 	}
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(computeUnit, b.visTracer)
 	}
 }
@@ -288,7 +295,7 @@ func (b *tileBuilder) buildL1VReorderBuffers(t *tile) {
 	rob := builder.Build(name)
 	t.l1vROB = rob
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(rob, b.visTracer)
 	}
 }
@@ -304,7 +311,7 @@ func (b *tileBuilder) buildL1VAddressTranslators(t *tile) {
 	at := builder.Build(name)
 	t.l1vAT = at
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(at, b.visTracer)
 	}
 }
@@ -322,7 +329,7 @@ func (b *tileBuilder) buildL1VTLBs(t *tile) {
 	tlb := builder.Build(name)
 	t.l1vTLB = tlb
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(tlb, b.visTracer)
 	}
 }
@@ -338,7 +345,7 @@ func (b *tileBuilder) buildL1SReorderBuffer(t *tile) {
 	rob := builder.Build(name)
 	t.l1sROB = rob
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(rob, b.visTracer)
 	}
 }
@@ -354,7 +361,7 @@ func (b *tileBuilder) buildL1SAddressTranslator(t *tile) {
 	at := builder.Build(name)
 	t.l1sAT = at
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(at, b.visTracer)
 	}
 }
@@ -372,7 +379,7 @@ func (b *tileBuilder) buildL1STLB(t *tile) {
 	tlb := builder.Build(name)
 	t.l1sTLB = tlb
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(tlb, b.visTracer)
 	}
 }
@@ -388,7 +395,7 @@ func (b *tileBuilder) buildL1IReorderBuffer(t *tile) {
 	rob := builder.Build(name)
 	t.l1iROB = rob
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(rob, b.visTracer)
 	}
 }
@@ -404,7 +411,7 @@ func (b *tileBuilder) buildL1IAddressTranslator(t *tile) {
 	at := builder.Build(name)
 	t.l1iAT = at
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(at, b.visTracer)
 	}
 }
@@ -422,7 +429,7 @@ func (b *tileBuilder) buildL1ITLB(t *tile) {
 	tlb := builder.Build(name)
 	t.l1iTLB = tlb
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(tlb, b.visTracer)
 	}
 }
@@ -442,7 +449,7 @@ func (b *tileBuilder) buildL1SCache(t *tile) {
 	cache := builder.Build(name)
 	t.l1sCache = cache
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(cache, b.visTracer)
 	}
 
@@ -467,7 +474,7 @@ func (b *tileBuilder) buildL1ICache(t *tile) {
 	cache := builder.Build(name)
 	t.l1iCache = cache
 
-	if b.visTracer != nil {
+	if b.visTracer != nil && !b.traceOnlyMesh {
 		tracing.CollectTrace(cache, b.visTracer)
 	}
 

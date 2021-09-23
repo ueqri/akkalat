@@ -30,17 +30,18 @@ type meshBuilder struct {
 	cp      *cp.CommandProcessor
 	l2TLB   *tlb.TLB
 
-	engine             sim.Engine
-	freq               sim.Freq
-	memAddrOffset      uint64
-	log2CacheLineSize  uint64
-	log2PageSize       uint64
-	visTracer          tracing.Tracer
-	memTracer          tracing.Tracer
-	enableISADebugging bool
-	enableMemTracing   bool
-	enableVisTracing   bool
-	monitor            *monitoring.Monitor
+	engine                sim.Engine
+	freq                  sim.Freq
+	memAddrOffset         uint64
+	log2CacheLineSize     uint64
+	log2PageSize          uint64
+	visTracer             tracing.Tracer
+	memTracer             tracing.Tracer
+	enableOnlyMeshTracing bool
+	enableISADebugging    bool
+	enableMemTracing      bool
+	enableVisTracing      bool
+	monitor               *monitoring.Monitor
 
 	tileWidth                      int
 	tileHeight                     int
@@ -119,6 +120,11 @@ func (b meshBuilder) withLog2PageSize(
 
 func (b meshBuilder) WithISADebugging() meshBuilder {
 	b.enableISADebugging = true
+	return b
+}
+
+func (b meshBuilder) withOnlyMeshTracing() meshBuilder {
+	b.enableOnlyMeshTracing = true
 	return b
 }
 
@@ -261,6 +267,10 @@ func (b *meshBuilder) buildTiles(m *mesh) {
 
 	if b.enableISADebugging {
 		tileBuilder = tileBuilder.withIsaDebugging()
+	}
+
+	if b.enableOnlyMeshTracing {
+		tileBuilder = tileBuilder.withOnlyMeshTracing()
 	}
 
 	if b.enableVisTracing {
