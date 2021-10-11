@@ -317,7 +317,7 @@ func (b *R9NanoPlatformBuilder) setVisTracer(
 		return gpuBuilder
 	}
 
-	tracer := tracing.NewMySQLTracerWithTimeRange(
+	tracer := tracing.NewRedisNetworkTracerWithTimeRange(
 		b.visTraceStartTime,
 		b.visTraceEndTime)
 	tracer.Init()

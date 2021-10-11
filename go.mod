@@ -13,4 +13,6 @@ replace gitlab.com/akita/mgpusim/v2 => ../mgpusim
 
 replace gitlab.com/akita/noc/v2 => ../noc
 
+replace gitlab.com/akita/util/v2 => ../util
+
 go 1.16
