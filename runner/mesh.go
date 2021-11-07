@@ -302,6 +302,12 @@ func (b *meshBuilder) buildTiles(m *mesh) {
 		for y := 0; y < b.tileWidth; y++ {
 			idx := x*b.tileWidth + y
 			m.meshConn.AddTile([3]int{x, y, 0}, m.tilesPorts[idx])
+			// dump the affiliated ports of each tile
+			// fmt.Printf("Tile [%d][%d]\n\n", x, y)
+			// for _, p := range m.tilesPorts[idx] {
+			// 	fmt.Println(p.Name())
+			// }
+			// fmt.Printf("\n\n")
 		}
 	}
 }

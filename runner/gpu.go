@@ -59,8 +59,8 @@ type WaferScaleGPUBuilder struct {
 func MakeWaferScaleGPUBuilder() WaferScaleGPUBuilder {
 	b := WaferScaleGPUBuilder{
 		freq:                           1 * sim.GHz,
-		tileWidth:                      32,
-		tileHeight:                     32,
+		tileWidth:                      8,
+		tileHeight:                     8,
 		numMemoryBank:                  16,
 		log2CacheLineSize:              6,
 		log2PageSize:                   12,
@@ -246,7 +246,6 @@ func (b *WaferScaleGPUBuilder) connectPeriphComponents() {
 	/* DMA(ToMem) <-> Mesh(SRAMs) */
 	b.cp.DMAEngine = b.dmaEngine.ToCP
 	b.connectWithDirectConnection(b.cp.ToDMA, b.dmaEngine.ToCP, 128)
-	b.ToMesh = append(b.ToMesh, b.dmaEngine.ToMem)
 
 	/* PMC(Control) <-> CP */
 	/* PMC(LocalMem) <-> Mesh(SRAM) */
@@ -255,6 +254,8 @@ func (b *WaferScaleGPUBuilder) connectPeriphComponents() {
 	b.periphConn.PlugIn(pmcControlPort, 1)
 	b.ToMesh = append(b.ToMesh,
 		b.pageMigrationController.GetPortByName("LocalMem"))
+
+	b.ToMesh = append(b.ToMesh, b.dmaEngine.ToMem)
 
 	/* L2TLB(Top) <-> L1TLBs(Mesh -> Bottom) */
 	/* L2TLB(Bottom) <-> MMU ; definied in populateExternalPorts */
