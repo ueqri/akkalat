@@ -7,6 +7,7 @@ import (
 	"gitlab.com/akita/akita/v2/sim"
 	"gitlab.com/akita/mem/v2/mem"
 	"gitlab.com/akita/mem/v2/vm/tlb"
+	"gitlab.com/akita/mgpusim/v2/insts"
 	"gitlab.com/akita/mgpusim/v2/timing/cp"
 	"gitlab.com/akita/mgpusim/v2/timing/pagemigrationcontroller"
 	meshNetwork "gitlab.com/akita/noc/v2/networking/mesh"
@@ -262,10 +263,12 @@ func (b *meshBuilder) Build(
 }
 
 func (b *meshBuilder) buildTiles(m *mesh) {
+	decoder := insts.NewDisassembler()
 	tileBuilder := makeTileBuilder().
 		withEngine(b.engine).
 		withFreq(b.freq).
 		withGPUID(b.gpuID).
+		withDecoder(decoder).
 		withLog2CachelineSize(b.log2CacheLineSize).
 		withLog2PageSize(b.log2PageSize).
 		WithGlobalStorage(b.globalStorage)

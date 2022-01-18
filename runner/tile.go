@@ -11,6 +11,7 @@ import (
 	"gitlab.com/akita/mem/v2/mem"
 	"gitlab.com/akita/mem/v2/vm/addresstranslator"
 	"gitlab.com/akita/mem/v2/vm/tlb"
+	"gitlab.com/akita/mgpusim/v2/emu"
 	"gitlab.com/akita/mgpusim/v2/timing/cu"
 	"gitlab.com/akita/mgpusim/v2/timing/rob"
 	"gitlab.com/akita/util/v2/tracing"
@@ -48,6 +49,7 @@ type tileBuilder struct {
 	memLatency        int
 
 	isaDebugging  bool
+	decoder       emu.Decoder
 	visTracer     tracing.Tracer
 	memTracer     tracing.Tracer
 	globalStorage *mem.Storage
@@ -109,6 +111,13 @@ func (b tileBuilder) withMemTracer(
 	memTracer tracing.Tracer,
 ) tileBuilder {
 	b.memTracer = memTracer
+	return b
+}
+
+func (b tileBuilder) withDecoder(
+	d emu.Decoder,
+) tileBuilder {
+	b.decoder = d
 	return b
 }
 
@@ -247,6 +256,7 @@ func (b *tileBuilder) buildCU(t *tile) {
 	cuBuilder := cu.MakeBuilder().
 		WithEngine(b.engine).
 		WithFreq(b.freq).
+		WithExternalDecoder(b.decoder).
 		WithLog2CachelineSize(b.log2CacheLineSize)
 
 	cuName := fmt.Sprintf("%s.CU", b.name)
