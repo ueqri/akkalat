@@ -17,6 +17,8 @@ import (
 	"gitlab.com/akita/util/v2/tracing"
 )
 
+var numTilesBuild int
+
 type tile struct {
 	cu *cu.ComputeUnit
 
@@ -132,6 +134,9 @@ func (b tileBuilder) Build(name string) tile {
 
 	b.buildComponents(&t)
 	b.connectComponents(&t)
+
+	numTilesBuild++
+	// fmt.Printf("Built tile %d\n", numTilesBuild)
 
 	return t
 }
@@ -257,6 +262,10 @@ func (b *tileBuilder) buildCU(t *tile) {
 		WithEngine(b.engine).
 		WithFreq(b.freq).
 		WithExternalDecoder(b.decoder).
+		WithSIMDCount(1).
+		WithVGPRCount([]int{16384}).
+		WithSGPRCount(3200).
+		WithSIMDWidth(4).
 		WithLog2CachelineSize(b.log2CacheLineSize)
 
 	cuName := fmt.Sprintf("%s.CU", b.name)
@@ -375,7 +384,7 @@ func (b *tileBuilder) buildL1STLB(t *tile) {
 		WithFreq(b.freq).
 		WithNumMSHREntry(4).
 		WithNumSets(1).
-		WithNumWays(64).
+		WithNumWays(4).
 		WithNumReqPerCycle(4)
 
 	name := fmt.Sprintf("%s.L1STLB", b.name)
@@ -425,7 +434,7 @@ func (b *tileBuilder) buildL1ITLB(t *tile) {
 		WithFreq(b.freq).
 		WithNumMSHREntry(4).
 		WithNumSets(1).
-		WithNumWays(64).
+		WithNumWays(4).
 		WithNumReqPerCycle(4)
 
 	name := fmt.Sprintf("%s.L1ITLB", b.name)
@@ -446,7 +455,7 @@ func (b *tileBuilder) buildL1SCache(t *tile) {
 		WithLog2BlockSize(b.log2CacheLineSize).
 		WithWayAssociativity(4).
 		WithNumMSHREntry(16).
-		WithTotalByteSize(16 * mem.KB) // could be divided by 4
+		WithTotalByteSize(1 * mem.KB)
 
 	name := fmt.Sprintf("%s.L1SCache", b.name)
 	cache := builder.Build(name)
@@ -470,7 +479,7 @@ func (b *tileBuilder) buildL1ICache(t *tile) {
 		WithLog2BlockSize(b.log2CacheLineSize).
 		WithWayAssociativity(4).
 		WithNumMSHREntry(16).
-		WithTotalByteSize(32 * mem.KB). // could be divided by 4
+		WithTotalByteSize(1 * mem.KB). // could be divided by 4
 		WithNumReqsPerCycle(4)
 
 	name := fmt.Sprintf("%s.L1ICache", b.name)
