@@ -7,15 +7,18 @@ import (
 	"gitlab.com/akita/akita/v2/sim"
 	"gitlab.com/akita/mem/v2/mem"
 	"gitlab.com/akita/mem/v2/vm/tlb"
+	"gitlab.com/akita/mgpusim/v2/insts"
 	"gitlab.com/akita/mgpusim/v2/timing/cp"
 	"gitlab.com/akita/mgpusim/v2/timing/pagemigrationcontroller"
 	meshNetwork "gitlab.com/akita/noc/v2/networking/mesh"
 	"gitlab.com/akita/util/v2/tracing"
 )
 
+type portBucket = []sim.Port
+
 type mesh struct {
 	tiles              []*tile
-	tilesPorts         [][]sim.Port
+	tilesPorts         []portBucket
 	memLowModuleFinder *mem.InterleavedLowModuleFinder
 	meshConn           *meshNetwork.Connector
 }
@@ -28,17 +31,18 @@ type meshBuilder struct {
 	cp      *cp.CommandProcessor
 	l2TLB   *tlb.TLB
 
-	engine             sim.Engine
-	freq               sim.Freq
-	memAddrOffset      uint64
-	log2CacheLineSize  uint64
-	log2PageSize       uint64
-	visTracer          tracing.Tracer
-	memTracer          tracing.Tracer
-	enableISADebugging bool
-	enableMemTracing   bool
-	enableVisTracing   bool
-	monitor            *monitoring.Monitor
+	engine                sim.Engine
+	freq                  sim.Freq
+	memAddrOffset         uint64
+	log2CacheLineSize     uint64
+	log2PageSize          uint64
+	visTracer             tracing.Tracer
+	memTracer             tracing.Tracer
+	enableOnlyMeshTracing bool
+	enableISADebugging    bool
+	enableMemTracing      bool
+	enableVisTracing      bool
+	monitor               *monitoring.Monitor
 
 	tileWidth                      int
 	tileHeight                     int
@@ -120,6 +124,11 @@ func (b meshBuilder) WithISADebugging() meshBuilder {
 	return b
 }
 
+func (b meshBuilder) withOnlyMeshTracing() meshBuilder {
+	b.enableOnlyMeshTracing = true
+	return b
+}
+
 func (b meshBuilder) withVisTracer(t tracing.Tracer) meshBuilder {
 	b.enableVisTracing = true
 	b.visTracer = t
@@ -173,6 +182,30 @@ func (b meshBuilder) withGlobalStorage(s *mem.Storage) meshBuilder {
 	return b
 }
 
+func blancePortsIntoBuckets(ports []sim.Port, buckets []*portBucket) {
+	batch := len(ports)
+	numBuckets := len(buckets)
+
+	load := batch / numBuckets
+	rest := batch % numBuckets
+
+	for i := 0; i < numBuckets; i++ {
+		var startPort, endPort int
+
+		if i < rest {
+			startPort = i * (load + 1)
+			endPort = startPort + load + 1
+		} else {
+			startPort = i*load + rest
+			endPort = startPort + load
+		}
+
+		for j := startPort; j < endPort; j++ {
+			*buckets[i] = append(*buckets[i], ports[j])
+		}
+	}
+}
+
 func (b *meshBuilder) separatePeripheralPorts(m *mesh, ports []sim.Port) {
 	b.numTile = b.tileHeight * b.tileWidth
 	if b.numTile <= 0 {
@@ -180,28 +213,27 @@ func (b *meshBuilder) separatePeripheralPorts(m *mesh, ports []sim.Port) {
 			"number before separating peripheral ports of the mesh to the edge!\n"
 		panic(errMsg)
 	}
-	m.tilesPorts = make([][]sim.Port, b.numTile)
+
 	// Simplest way, to attach peripheral ports to Tile[0, 0].
 	// m.tilesPorts[0] = append(m.tilesPorts[0], ports...)
 
-	batch := len(ports)
-	load := batch / b.tileWidth
-	rest := batch % b.tileWidth
+	m.tilesPorts = make([]portBucket, b.numTile)
+
+	var buckets []*portBucket
 	for i := 0; i < b.tileWidth; i++ {
-		if i < rest {
-			startPort := i * (load + 1)
-			endPort := startPort + load + 1
-			for j := startPort; j < endPort; j++ {
-				m.tilesPorts[i] = append(m.tilesPorts[i], ports[j])
-			}
-		} else {
-			startPort := i*load + rest
-			endPort := startPort + load
-			for j := startPort; j < endPort; j++ {
-				m.tilesPorts[i] = append(m.tilesPorts[i], ports[j])
-			}
-		}
+		// North edge
+		buckets = append(buckets, &m.tilesPorts[i])
+		// South edge
+		buckets = append(buckets, &m.tilesPorts[b.numTile-i-1])
 	}
+	for i := 1; i < b.tileHeight-1; i++ {
+		// West edge (exclude ends of north line)
+		buckets = append(buckets, &m.tilesPorts[i*b.tileWidth])
+		// East edge (exclude ends of south line)
+		buckets = append(buckets, &m.tilesPorts[i*b.tileWidth+b.tileWidth-1])
+	}
+
+	blancePortsIntoBuckets(ports, buckets)
 }
 
 func (b *meshBuilder) Build(
@@ -216,6 +248,11 @@ func (b *meshBuilder) Build(
 	m.meshConn = meshNetwork.NewConnector().
 		WithEngine(b.engine).
 		WithFreq(b.freq)
+
+	if b.enableVisTracing {
+		m.meshConn = m.meshConn.WithVisTracer(b.visTracer)
+	}
+
 	m.meshConn.CreateNetwork(b.name)
 
 	b.buildTiles(&m)
@@ -226,10 +263,12 @@ func (b *meshBuilder) Build(
 }
 
 func (b *meshBuilder) buildTiles(m *mesh) {
+	decoder := insts.NewDisassembler()
 	tileBuilder := makeTileBuilder().
 		withEngine(b.engine).
 		withFreq(b.freq).
 		withGPUID(b.gpuID).
+		withDecoder(decoder).
 		withLog2CachelineSize(b.log2CacheLineSize).
 		withLog2PageSize(b.log2PageSize).
 		WithGlobalStorage(b.globalStorage)
@@ -238,7 +277,7 @@ func (b *meshBuilder) buildTiles(m *mesh) {
 		tileBuilder = tileBuilder.withIsaDebugging()
 	}
 
-	if b.enableVisTracing {
+	if b.enableVisTracing && !b.enableOnlyMeshTracing {
 		tileBuilder = tileBuilder.withVisTracer(b.visTracer)
 	}
 
@@ -266,6 +305,12 @@ func (b *meshBuilder) buildTiles(m *mesh) {
 		for y := 0; y < b.tileWidth; y++ {
 			idx := x*b.tileWidth + y
 			m.meshConn.AddTile([3]int{x, y, 0}, m.tilesPorts[idx])
+			// dump the affiliated ports of each tile
+			// fmt.Printf("Tile [%d][%d]\n\n", x, y)
+			// for _, p := range m.tilesPorts[idx] {
+			// 	fmt.Println(p.Name())
+			// }
+			// fmt.Printf("\n\n")
 		}
 	}
 }

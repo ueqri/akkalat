@@ -15,3 +15,5 @@
 # vendor/
 
 samples/**/metrics.csv
+
+.vscode

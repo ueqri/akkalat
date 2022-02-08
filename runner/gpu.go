@@ -26,12 +26,13 @@ type WaferScaleGPUBuilder struct {
 	log2CacheLineSize              uint64
 	log2MemoryBankInterleavingSize uint64
 
-	enableISADebugging bool
-	enableMemTracing   bool
-	enableVisTracing   bool
-	visTracer          tracing.Tracer
-	memTracer          tracing.Tracer
-	monitor            *monitoring.Monitor
+	enableOnlyMeshTracing bool
+	enableISADebugging    bool
+	enableMemTracing      bool
+	enableVisTracing      bool
+	visTracer             tracing.Tracer
+	memTracer             tracing.Tracer
+	monitor               *monitoring.Monitor
 
 	gpuName string
 	gpu     *GPU
@@ -58,13 +59,14 @@ type WaferScaleGPUBuilder struct {
 func MakeWaferScaleGPUBuilder() WaferScaleGPUBuilder {
 	b := WaferScaleGPUBuilder{
 		freq:                           1 * sim.GHz,
-		tileWidth:                      4,
-		tileHeight:                     4,
+		tileWidth:                      256,
+		tileHeight:                     256,
 		numMemoryBank:                  16,
 		log2CacheLineSize:              6,
 		log2PageSize:                   12,
 		log2MemoryBankInterleavingSize: 12,
 		memorySize:                     4 * mem.GB,
+		enableOnlyMeshTracing:          true,
 	}
 	return b
 }
@@ -244,7 +246,6 @@ func (b *WaferScaleGPUBuilder) connectPeriphComponents() {
 	/* DMA(ToMem) <-> Mesh(SRAMs) */
 	b.cp.DMAEngine = b.dmaEngine.ToCP
 	b.connectWithDirectConnection(b.cp.ToDMA, b.dmaEngine.ToCP, 128)
-	b.ToMesh = append(b.ToMesh, b.dmaEngine.ToMem)
 
 	/* PMC(Control) <-> CP */
 	/* PMC(LocalMem) <-> Mesh(SRAM) */
@@ -253,6 +254,8 @@ func (b *WaferScaleGPUBuilder) connectPeriphComponents() {
 	b.periphConn.PlugIn(pmcControlPort, 1)
 	b.ToMesh = append(b.ToMesh,
 		b.pageMigrationController.GetPortByName("LocalMem"))
+
+	b.ToMesh = append(b.ToMesh, b.dmaEngine.ToMem)
 
 	/* L2TLB(Top) <-> L1TLBs(Mesh -> Bottom) */
 	/* L2TLB(Bottom) <-> MMU ; definied in populateExternalPorts */
@@ -284,6 +287,11 @@ func (b *WaferScaleGPUBuilder) buildMesh(name string) {
 		withDMAEngine(b.dmaEngine).
 		withPageMigrationController(b.pageMigrationController).
 		withGlobalStorage(b.globalStorage)
+
+	if b.enableOnlyMeshTracing {
+		meshBuilder = meshBuilder.withOnlyMeshTracing()
+	}
+
 	b.mesh = meshBuilder.Build(name, b.ToMesh)
 }
 
@@ -321,7 +329,7 @@ func (b *WaferScaleGPUBuilder) buildDMAEngine() {
 		b.engine,
 		nil)
 
-	if b.enableVisTracing {
+	if b.enableVisTracing && !b.enableOnlyMeshTracing {
 		tracing.CollectTrace(b.dmaEngine, b.visTracer)
 	}
 
@@ -367,7 +375,7 @@ func (b *WaferScaleGPUBuilder) buildL2TLB() {
 	b.l2TLB = builder.Build(fmt.Sprintf("%s.L2TLB", b.gpuName))
 	b.gpu.L2TLBs = append(b.gpu.L2TLBs, b.l2TLB)
 
-	if b.enableVisTracing {
+	if b.enableVisTracing && !b.enableOnlyMeshTracing {
 		tracing.CollectTrace(b.l2TLB, b.visTracer)
 	}
 
