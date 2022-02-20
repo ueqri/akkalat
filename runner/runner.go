@@ -23,6 +23,10 @@ import (
 	"gitlab.com/akita/util/v2/tracing"
 )
 
+// Command options especially for mesh networking.
+var tileWidth = flag.Int("width", 128, "Width of the tiles in a mesh.")
+var tileHeight = flag.Int("height", 128, "Height of the tiles in a mesh.")
+
 var timingFlag = flag.Bool("timing", false, "Run detailed timing simulation.")
 var maxInstCount = flag.Uint64("max-inst", 0,
 	"Terminate the simulation after the given number of instructions is retired.")
@@ -292,6 +296,10 @@ func (r *Runner) buildTimingPlatform() {
 	if *magicMemoryCopy {
 		b = b.WithMagicMemoryCopy()
 	}
+
+	fmt.Printf("The wafer-scale GPU is built to %d x %d mesh\n",
+		*tileHeight, *tileWidth)
+	b = b.WithTileWidth(*tileWidth).WithTileHeight(*tileHeight)
 
 	r.platform = b.Build()
 

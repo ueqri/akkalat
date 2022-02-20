@@ -29,6 +29,9 @@ type R9NanoPlatformBuilder struct {
 	useMagicMemoryCopy bool
 	log2PageSize       uint64
 
+	tileWidth  int
+	tileHeight int
+
 	monitor *monitoring.Monitor
 
 	globalStorage *mem.Storage
@@ -109,6 +112,18 @@ func (b R9NanoPlatformBuilder) WithMonitor(
 // WithMagicMemoryCopy uses global storage as memory components
 func (b R9NanoPlatformBuilder) WithMagicMemoryCopy() R9NanoPlatformBuilder {
 	b.useMagicMemoryCopy = true
+	return b
+}
+
+// WithTileWidth sets the number of tiles horizontally.
+func (b R9NanoPlatformBuilder) WithTileWidth(w int) R9NanoPlatformBuilder {
+	b.tileWidth = w
+	return b
+}
+
+// WithTileHeight sets the number of tiles vertically.
+func (b R9NanoPlatformBuilder) WithTileHeight(h int) R9NanoPlatformBuilder {
+	b.tileHeight = h
 	return b
 }
 
@@ -268,7 +283,9 @@ func (b *R9NanoPlatformBuilder) createGPUBuilder(
 		WithNumMemoryBank(16).
 		WithLog2MemoryBankInterleavingSize(7).
 		WithLog2PageSize(b.log2PageSize).
-		WithGlobalStorage(b.globalStorage)
+		WithGlobalStorage(b.globalStorage).
+		WithTileWidth(b.tileWidth).
+		WithTileHeight(b.tileHeight)
 
 	if b.monitor != nil {
 		gpuBuilder = gpuBuilder.WithMonitor(b.monitor)
@@ -317,31 +334,36 @@ func (b *R9NanoPlatformBuilder) setVisTracer(
 		return gpuBuilder
 	}
 
-	// recordEncoder := tracing.NewNetworkTracingRecordEncoder([]string{
-	// 	"*cache.FlushReq",
-	// 	"*cache.FlushRsp",
-	// 	"*mem.DataReadyRsp",
-	// 	"*mem.ReadReq",
-	// 	"*mem.WriteDoneRsp",
-	// 	"*mem.WriteReq",
-	// 	"*protocol.FlushReq",
-	// 	"*protocol.LaunchKernelReq",
-	// 	"*protocol.MapWGReq",
-	// 	"*protocol.MemCopyD2HReq",
-	// 	"*protocol.MemCopyH2DReq",
-	// 	"*protocol.WGCompletionMsg",
-	// 	"*vm.TranslationReq",
-	// 	"*vm.TranslationRsp",
-	// }).OnlyOneGPU().Only2DMesh()
-	// tracer := tracing.NewRedisNetworkTracerWithTimeRange(
-	// 	b.visTraceStartTime,
-	// 	b.visTraceEndTime,
-	// 	16,
-	// 	recordEncoder,
-	// )
-	// tracer.Init()
-	tracer := tracing.NewCSVTracer()
+	recordEncoder := tracing.NewNetworkTracingRecordEncoder([]string{
+		"*cache.FlushReq",
+		"*cache.FlushRsp",
+		"*mem.DataReadyRsp",
+		"*mem.ReadReq",
+		"*mem.WriteDoneRsp",
+		"*mem.WriteReq",
+		"*protocol.FlushReq",
+		"*protocol.LaunchKernelReq",
+		"*protocol.MapWGReq",
+		"*protocol.MemCopyD2HReq",
+		"*protocol.MemCopyH2DReq",
+		"*protocol.WGCompletionMsg",
+		"*vm.TranslationReq",
+		"*vm.TranslationRsp",
+	}).OnlyOneGPU().Only2DMesh()
+	tracer := tracing.NewRedisNetworkTracerWithTimeRange(
+		b.visTraceStartTime,
+		b.visTraceEndTime,
+		16,
+		recordEncoder,
+	)
 	tracer.Init()
+
+	// Use CSV tracer to dump all tracing data into a file, with similar format to
+	// MySQL tracer. The mesh networking data will be saves meanwhile.
+
+	// tracer := tracing.NewCSVTracer()
+	// tracer.Init()
+
 	tracing.CollectTrace(gpuDriver, tracer)
 
 	gpuBuilder = gpuBuilder.WithVisTracer(tracer)
