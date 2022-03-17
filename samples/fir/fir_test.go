@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/heteromark/fir"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/heteromark/fir"
 )
 
 func BenchmarkFIR(t *testing.B) {

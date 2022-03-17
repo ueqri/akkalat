@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/amdappsdk/nbody"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/amdappsdk/nbody"
 )
 
 var numIter = flag.Int("iter", 8, "The number of iterations to run.")

@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/amdappsdk/simpleconvolution"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/amdappsdk/simpleconvolution"
 )
 
 var widthFlag = flag.Uint("width", 254, "The width of the input matrix.")

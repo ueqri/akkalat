@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/heteromark/pagerank"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/heteromark/pagerank"
 )
 
 var numNode = flag.Int("node", 16, "The number of nodes")

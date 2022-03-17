@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/dnn/conv2d"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/dnn/conv2d"
 )
 
 var n = flag.Int("N", 1, "batch size")

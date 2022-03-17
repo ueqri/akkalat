@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/server"
+	"gitlab.com/akita/mgpusim/v3/server"
 )
 
 func main() {

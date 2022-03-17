@@ -4,7 +4,7 @@ import (
 	"flag"
 	"math/rand"
 
-	"gitlab.com/akita/mgpusim/v2/benchmarks/dnn/lenet"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/dnn/lenet"
 
 	"github.com/sarchlab/akkalat/runner"
 )

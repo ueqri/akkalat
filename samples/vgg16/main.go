@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/dnn/vgg16"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/dnn/vgg16"
 )
 
 var epochFlag = flag.Int("epoch", 1, "Number of epoch to run.")

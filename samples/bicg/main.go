@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/polybench/bicg"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/polybench/bicg"
 )
 
 var xFlag = flag.Int("x", 4096, "The width of the matrix.")

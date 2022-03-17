@@ -6,8 +6,8 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/amdappsdk/bitonicsort"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/heteromark/fir"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/amdappsdk/bitonicsort"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/heteromark/fir"
 )
 
 func main() {

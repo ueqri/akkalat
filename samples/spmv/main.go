@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/shoc/spmv"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/shoc/spmv"
 )
 
 // Dim is dimension

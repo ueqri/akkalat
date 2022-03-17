@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/shoc/fft"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/shoc/fft"
 )
 
 var mb = flag.Int("MB", 8, "data size (in megabytes)")

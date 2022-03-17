@@ -3,15 +3,15 @@ package runner
 import (
 	"fmt"
 
-	"gitlab.com/akita/akita/v2/monitoring"
-	"gitlab.com/akita/akita/v2/sim"
-	"gitlab.com/akita/mem/v2/mem"
-	"gitlab.com/akita/mem/v2/vm/tlb"
-	"gitlab.com/akita/mgpusim/v2/insts"
-	"gitlab.com/akita/mgpusim/v2/timing/cp"
-	"gitlab.com/akita/mgpusim/v2/timing/pagemigrationcontroller"
-	meshNetwork "gitlab.com/akita/noc/v2/networking/mesh"
-	"gitlab.com/akita/util/v2/tracing"
+	"gitlab.com/akita/akita/v3/monitoring"
+	"gitlab.com/akita/akita/v3/sim"
+	"gitlab.com/akita/akita/v3/tracing"
+	"gitlab.com/akita/mem/v3/mem"
+	"gitlab.com/akita/mem/v3/vm/tlb"
+	"gitlab.com/akita/mgpusim/v3/insts"
+	"gitlab.com/akita/mgpusim/v3/timing/cp"
+	"gitlab.com/akita/mgpusim/v3/timing/pagemigrationcontroller"
+	meshNetwork "gitlab.com/akita/noc/v3/networking/mesh"
 )
 
 type portBucket = []sim.Port

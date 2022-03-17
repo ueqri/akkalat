@@ -5,7 +5,7 @@ import (
 	"math/rand"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/dnn/xor"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/dnn/xor"
 )
 
 func main() {

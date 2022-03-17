@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/amdappsdk/matrixtranspose"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/amdappsdk/matrixtranspose"
 )
 
 var dataWidth = flag.Int("width", 256, "The dimension of the square matrix.")

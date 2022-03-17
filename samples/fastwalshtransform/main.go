@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/amdappsdk/fastwalshtransform"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/amdappsdk/fastwalshtransform"
 )
 
 var length = flag.Int("length", 1024, "The length of the array that will be transformed")

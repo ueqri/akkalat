@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/shoc/stencil2d"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/shoc/stencil2d"
 )
 
 var numRow = flag.Int("row", 64, "The number of rows in the input matrix.")

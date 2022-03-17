@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/shoc/bfs"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/shoc/bfs"
 )
 
 var path = flag.String("load-graph", "", "Path to file from which graph to be loaded. "+

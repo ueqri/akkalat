@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/heteromark/aes"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/heteromark/aes"
 )
 
 var lenInput = flag.Int("length", 65536, "The length of array to sort.")

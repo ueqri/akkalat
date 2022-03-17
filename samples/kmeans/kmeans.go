@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/heteromark/kmeans"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/heteromark/kmeans"
 )
 
 var points = flag.Int("points", 1024, "The number of points.")

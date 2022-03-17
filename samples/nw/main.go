@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/sarchlab/akkalat/runner"
-	"gitlab.com/akita/mgpusim/v2/benchmarks/rodinia/nw"
+	"gitlab.com/akita/mgpusim/v3/benchmarks/rodinia/nw"
 )
 
 var length = flag.Int("length", 64, "The number bases in the gene sequence")
