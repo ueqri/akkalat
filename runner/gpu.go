@@ -5,6 +5,7 @@ import (
 
 	"gitlab.com/akita/akita/v3/monitoring"
 	"gitlab.com/akita/akita/v3/sim"
+	"gitlab.com/akita/akita/v3/sim/bottleneckanalysis"
 	"gitlab.com/akita/akita/v3/tracing"
 	"gitlab.com/akita/mem/v3/mem"
 	"gitlab.com/akita/mem/v3/vm/mmu"
@@ -33,6 +34,7 @@ type WaferScaleGPUBuilder struct {
 	visTracer             tracing.Tracer
 	memTracer             tracing.Tracer
 	monitor               *monitoring.Monitor
+	bufferAnalyzer        *bottleneckanalysis.BufferAnalyzer
 
 	gpuName string
 	gpu     *GPU
@@ -163,6 +165,14 @@ func (b WaferScaleGPUBuilder) WithMonitor(
 	return b
 }
 
+// WithBufferAnalyzer sets the buffer analyzer to use.
+func (b WaferScaleGPUBuilder) WithBufferAnalyzer(
+	a *bottleneckanalysis.BufferAnalyzer,
+) WaferScaleGPUBuilder {
+	b.bufferAnalyzer = a
+	return b
+}
+
 // WithDRAMSize sets the sum size of all SRAMs in the GPU.
 func (b WaferScaleGPUBuilder) WithMemorySize(s uint64) WaferScaleGPUBuilder {
 	b.memorySize = s
@@ -288,6 +298,10 @@ func (b *WaferScaleGPUBuilder) buildMesh(name string) {
 
 	if b.enableOnlyMeshTracing {
 		meshBuilder = meshBuilder.withOnlyMeshTracing()
+	}
+
+	if b.bufferAnalyzer != nil {
+		meshBuilder = meshBuilder.WithBufferAnalyzer(b.bufferAnalyzer)
 	}
 
 	b.mesh = meshBuilder.Build(name, b.ToMesh)

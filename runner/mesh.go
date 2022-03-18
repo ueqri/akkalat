@@ -5,6 +5,7 @@ import (
 
 	"gitlab.com/akita/akita/v3/monitoring"
 	"gitlab.com/akita/akita/v3/sim"
+	"gitlab.com/akita/akita/v3/sim/bottleneckanalysis"
 	"gitlab.com/akita/akita/v3/tracing"
 	"gitlab.com/akita/mem/v3/mem"
 	"gitlab.com/akita/mem/v3/vm/tlb"
@@ -43,6 +44,7 @@ type meshBuilder struct {
 	enableMemTracing      bool
 	enableVisTracing      bool
 	monitor               *monitoring.Monitor
+	bufferAnalyzer        *bottleneckanalysis.BufferAnalyzer
 
 	tileWidth                      int
 	tileHeight                     int
@@ -143,6 +145,13 @@ func (b meshBuilder) withMemTracer(t tracing.Tracer) meshBuilder {
 
 func (b meshBuilder) withMonitor(monitor *monitoring.Monitor) meshBuilder {
 	b.monitor = monitor
+	return b
+}
+
+func (b meshBuilder) WithBufferAnalyzer(
+	analyzer *bottleneckanalysis.BufferAnalyzer,
+) meshBuilder {
+	b.bufferAnalyzer = analyzer
 	return b
 }
 
@@ -251,6 +260,10 @@ func (b *meshBuilder) Build(
 
 	if b.enableVisTracing {
 		m.meshConn = m.meshConn.WithVisTracer(b.visTracer)
+	}
+
+	if b.bufferAnalyzer != nil {
+		m.meshConn = m.meshConn.WithBufferAnalyzer(b.bufferAnalyzer)
 	}
 
 	m.meshConn.CreateNetwork(b.name)

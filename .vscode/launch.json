@@ -13,6 +13,8 @@
 			"args": [
 				"-timing",
 				"-verify",
+				"-buffer-level-trace-dir=buf_level_trace",
+				"-buffer-level-trace-period=1e-6"
 			],
 		}
 	]
