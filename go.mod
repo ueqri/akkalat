@@ -10,10 +10,10 @@ require (
 
 // Make sure mgpusim is on the latest commit of
 // `90-command-processor-reuses-todma-sender-port` branch
-// replace gitlab.com/akita/mgpusim/v3 => ../mgpusim
+replace gitlab.com/akita/mgpusim/v3 => ../mgpusim
 
 // Make sure noc is on the latest commit of `9-task-tracing-for-networks` branch
-// replace gitlab.com/akita/noc/v3 => ../noc
+replace gitlab.com/akita/noc/v3 => ../noc
 
 // Make sure util is on the latest commit of `v2` branch
 // replace gitlab.com/akita/util/v2 => ../util

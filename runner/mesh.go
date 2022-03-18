@@ -59,8 +59,8 @@ func makeMeshBuilder() meshBuilder {
 		gpuID:      0,
 		name:       "Mesh",
 		freq:       1 * sim.GHz,
-		tileWidth:  0,
-		tileHeight: 0,
+		tileWidth:  16,
+		tileHeight: 16,
 	}
 	return b
 }

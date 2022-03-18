@@ -14,6 +14,7 @@ import (
 	"gitlab.com/akita/mem/v3/vm"
 	"gitlab.com/akita/mem/v3/vm/mmu"
 	"gitlab.com/akita/mgpusim/v3/driver"
+	"gitlab.com/akita/noc/v3/networking/noctracing"
 	"gitlab.com/akita/noc/v3/networking/pcie"
 )
 
@@ -335,7 +336,7 @@ func (b *R9NanoPlatformBuilder) setVisTracer(
 		return gpuBuilder
 	}
 
-	recordEncoder := tracing.NewNetworkTracingRecordEncoder([]string{
+	recordEncoder := noctracing.NewNetworkTracingRecordEncoder([]string{
 		"*cache.FlushReq",
 		"*cache.FlushRsp",
 		"*mem.DataReadyRsp",
@@ -351,7 +352,8 @@ func (b *R9NanoPlatformBuilder) setVisTracer(
 		"*vm.TranslationReq",
 		"*vm.TranslationRsp",
 	}).OnlyOneGPU().Only2DMesh()
-	tracer := tracing.NewRedisNetworkTracerWithTimeRange(
+	tracer := noctracing.NewRedisNetworkTracerWithTimeRange(
+		b.engine,
 		b.visTraceStartTime,
 		b.visTraceEndTime,
 		16,
