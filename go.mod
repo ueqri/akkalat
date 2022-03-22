@@ -13,7 +13,7 @@ require (
 replace gitlab.com/akita/mgpusim/v3 => ../mgpusim
 
 // Make sure noc is on the latest commit of `9-task-tracing-for-networks` branch
-// replace gitlab.com/akita/noc/v3 => ../noc
+replace gitlab.com/akita/noc/v3 => ../noc
 
 // replace gitlab.com/akita/akita/v3 => ../akita
 

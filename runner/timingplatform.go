@@ -369,7 +369,7 @@ func (b *R9NanoPlatformBuilder) setVisTracer(
 		return gpuBuilder
 	}
 
-	tracer := noctracing.NewRedisNetworkTracerWithTimeRange(
+	tracer := noctracing.NewMeshNetworkTracerWithTimeRange(
 		b.engine,
 		b.visTraceStartTime,
 		b.visTraceEndTime,
