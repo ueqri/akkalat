@@ -369,28 +369,13 @@ func (b *R9NanoPlatformBuilder) setVisTracer(
 		return gpuBuilder
 	}
 
-	recordEncoder := noctracing.NewNetworkTracingRecordEncoder([]string{
-		"*cache.FlushReq",
-		"*cache.FlushRsp",
-		"*mem.DataReadyRsp",
-		"*mem.ReadReq",
-		"*mem.WriteDoneRsp",
-		"*mem.WriteReq",
-		"*protocol.FlushReq",
-		"*protocol.LaunchKernelReq",
-		"*protocol.MapWGReq",
-		"*protocol.MemCopyD2HReq",
-		"*protocol.MemCopyH2DReq",
-		"*protocol.WGCompletionMsg",
-		"*vm.TranslationReq",
-		"*vm.TranslationRsp",
-	}).OnlyOneGPU().Only2DMesh()
 	tracer := noctracing.NewRedisNetworkTracerWithTimeRange(
 		b.engine,
 		b.visTraceStartTime,
 		b.visTraceEndTime,
 		16,
-		recordEncoder,
+		uint16(b.tileWidth),
+		uint16(b.tileHeight),
 	)
 	tracer.Init()
 
