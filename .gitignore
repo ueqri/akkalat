@@ -15,5 +15,6 @@
 # vendor/
 
 samples/**/metrics.csv
+samples/**/*.json
 
 .vscode

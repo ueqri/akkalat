@@ -9,15 +9,13 @@ require (
 )
 
 // Make sure mgpusim is on the latest commit of
-// `90-command-processor-reuses-todma-sender-port` branch
+// `290-command-processor-reuses-todma-sender-port` branch
 replace gitlab.com/akita/mgpusim/v3 => ../mgpusim
 
-// Make sure noc is on the latest commit of `9-task-tracing-for-networks` branch
+// Make sure noc is on the latest commit of
+// `12-implement-robust-meshnetworktracer` branch
 replace gitlab.com/akita/noc/v3 => ../noc
 
-// replace gitlab.com/akita/akita/v3 => ../akita
-
-// Make sure util is on the latest commit of `v2` branch
-// replace gitlab.com/akita/util/v2 => ../util
+replace gitlab.com/akita/akita/v3 => ../akita
 
 go 1.16
