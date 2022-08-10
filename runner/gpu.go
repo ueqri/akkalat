@@ -15,7 +15,7 @@ import (
 	"gitlab.com/akita/mgpusim/v3/timing/rdma"
 )
 
-// WaferScaleGPUBuilder can build R9 Nano GPUs.
+// WaferScaleGPUBuilder can build Wafer-Scale GPUs.
 type WaferScaleGPUBuilder struct {
 	engine                         sim.Engine
 	freq                           sim.Freq
@@ -57,7 +57,7 @@ type WaferScaleGPUBuilder struct {
 	l2TLB      *tlb.TLB
 }
 
-// MakeWaferScaleGPUBuilder provides a GPU builder that can builds the R9Nano GPU.
+// MakeWaferScaleGPUBuilder provides a GPU builder that can builds the Wafer-Scale GPU.
 func MakeWaferScaleGPUBuilder() WaferScaleGPUBuilder {
 	b := WaferScaleGPUBuilder{
 		freq:                           1 * sim.GHz,

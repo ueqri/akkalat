@@ -35,6 +35,8 @@ var parallelFlag = flag.Bool("parallel", false,
 var isaDebug = flag.Bool("debug-isa", false, "Generate the ISA debugging file.")
 var visTracing = flag.Bool("trace-vis", false,
 	"Generate trace for visualization purposes.")
+var visTracingDisableNoCTracer = flag.Bool("trace-vis-disable-noc-tracer", false,
+	"Disable NoC Tracer for visualization purposes, i.e., only use MySQL Tracer.")
 var visTraceStartTime = flag.Float64("trace-vis-start", -1,
 	"The starting time to collect visualization traces. A negative number "+
 		"represents starting from the beginning.")
@@ -272,7 +274,7 @@ func (r *Runner) buildEmuPlatform() {
 }
 
 func (r *Runner) buildTimingPlatform() {
-	b := MakeR9NanoBuilder().
+	b := MakeWaferScaleGPUPlatformBuilder().
 		WithNumGPU(r.GPUIDs[len(r.GPUIDs)-1])
 
 	if r.Parallel {
@@ -287,6 +289,7 @@ func (r *Runner) buildTimingPlatform() {
 		b = b.WithPartialVisTracing(
 			sim.VTimeInSec(*visTraceStartTime),
 			sim.VTimeInSec(*visTraceEndTime),
+			*visTracingDisableNoCTracer,
 		)
 	}
 
@@ -313,8 +316,8 @@ func (r *Runner) buildTimingPlatform() {
 }
 
 func (*Runner) setupBufferLevelTracing(
-	b R9NanoPlatformBuilder,
-) R9NanoPlatformBuilder {
+	b WaferScaleGPUPlatformBuilder,
+) WaferScaleGPUPlatformBuilder {
 	if *bufferLevelTracePeriodFlag != 0 && *bufferLevelTraceDirFlag == "" {
 		panic("Buffer level trace directory is not specified")
 	}
