@@ -1,12 +1,12 @@
-# akkalat
+# Akkalat, Wafer-Scale GPU Simulation Infrastructure
 
 Akkalat is the infrastructure to simulate wafer-scale GPUs, based on the architecture-agnostic simulator framework [Akita](https://gitlab.com/akita/akita).
 
-The simulator targeted on [Cerebras Wafer-Scale Engines](https://cerebras.net/blog/cerebras-wafer-scale-engine-why-we-need-big-chips-for-deep-learning/) and enable OpenCL workloads running as benchmarks.
+The simulator targeted on [Cerebras Wafer-Scale Engines](https://cerebras.net/blog/cerebras-wafer-scale-engine-why-we-need-big-chips-for-deep-learning/) and supported a variety of OpenCL benchmarks.
 
-In the latest stable Akkalat v3, we model a tile-based system at *CU(Compute Unit)-level*. The tile consists of optimized L1 caches and TLBs, distributed memory and other basic components like reorder buffers and address translators.
+In the latest stable Akkalat v3, we devised a **tile-based hardware paradigm**, which can highly scale up compute resources at *CU(Compute Unit)-level*. Each tile consists of optimized L1 caches and TLBs, distributed memory and other basic components like reorder buffers and address translators. The tiles are connected to a Network-on-Chip (NoC) for communication.
 
-The further performance optimization and hardware designs could be assisted with [Akita Vis4Mesh](https://github.com/ueqri/vis4mesh), a visualization tool developed later for mesh Network-on-Chip research.
+The further performance optimization and hardware designs could be assisted with [Vis4Mesh](https://github.com/ueqri/vis4mesh), a visualization tool developed later for mesh Network-on-Chip research.
 
 ## Build
 
@@ -28,7 +28,7 @@ export AKITA_TRACE_REDIS_DB=0
 # Then follow Vis4Mesh tutorial to run visualization
 ```
 
-Notice: many akita libraries used here are also under development, so make sure the go packages `util`, `noc` and `mgpusim` (as we see in `go.mod`) are all cloned and on the latest commit of correct branches.
+Note: many Akita libraries used here are under development, therefore please stick with the *latest* commit of the *correct* branches for go packages `util`, `noc`, and `mgpusim` (as described in `go.mod`).
 
 ```bash
 # Assume the work directory is inside akkalat/
@@ -40,7 +40,7 @@ git clone --single-branch -b 90-command-processor-reuses-todma-sender-port git@g
 
 ## Benchmark
 
-We support the same benchmark set as MGPUSim.
+We support the following benchmarks the evaluate the performance.
 
 | AMD APP SDK           | DNN Mark   | HeteroMark | Polybench | Rodinia          | SHOC      |
 | --------------------- | ---------- | ---------- | --------- | ---------------- | --------- |
@@ -60,14 +60,6 @@ This figure is generated full-automatically by another self-developed tool [akit
 
 ![speedup](https://raw.githubusercontent.com/ueqri/akitaplot/main/example_kernelTime.png)
 
-## Changelog
+## Publications
 
-### Nov 8, 2021
-
-After profiling the v2 model in [Daisen](https://osf.io/73ry8/), we found the **Instruction Caches** and **Scalar Caches** are definitely needed to avoid massive global memory requests. So we attached these specific caches inside each tile.
-
-This is the **stable** version recently, we would do further research based on the visualization results of [Vis4Mesh](https://github.com/ueqri/vis4mesh). Further steps includes applying large-bandwidth DMA engine along the mesh edge, optimizing data placement for better locality and so on.
-
-### Full history
-
-To see the development progress, please switch to `CHANGE.log`, click [here](https://github.com/ueqri/akkalat/blob/main/CHANGELOG.md).
+- Chris Thames, Hang Yan, and Yifan Sun. [Understanding wafer-scale GPU performance using an architectural simulator](https://doi.org/10.1145/3530390.3532736). In Proceedings of the 14th Workshop on General Purpose Processing Using GPU (GPGPU '22). April 2022.
