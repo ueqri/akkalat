@@ -6,13 +6,13 @@ import (
 	"os"
 
 	"github.com/tebeka/atexit"
-	memtraces "gitlab.com/akita/mem/v3/trace"
 
 	"gitlab.com/akita/akita/v3/monitoring"
 	"gitlab.com/akita/akita/v3/sim"
 	"gitlab.com/akita/akita/v3/sim/bottleneckanalysis"
 	"gitlab.com/akita/akita/v3/tracing"
 	"gitlab.com/akita/mem/v3/mem"
+	memtraces "gitlab.com/akita/mem/v3/trace"
 	"gitlab.com/akita/mem/v3/vm"
 	"gitlab.com/akita/mem/v3/vm/mmu"
 	"gitlab.com/akita/mgpusim/v3/driver"
@@ -22,20 +22,20 @@ import (
 
 // WaferScaleGPUPlatformBuilder can build a platform that equips Wafer-Scale GPU.
 type WaferScaleGPUPlatformBuilder struct {
-	useParallelEngine        bool
-	debugISA                 bool
-	traceVis                 bool
-	visTraceStartTime        sim.VTimeInSec
-	visTraceEndTime          sim.VTimeInSec
-	visTraceDisableNoCTracer bool
-	traceMem                 bool
-	numGPU                   int
-	useMagicMemoryCopy       bool
-	log2PageSize             uint64
-	engine                   sim.Engine
-	bufferAnalyzingDir       string
-	bufferAnalyzingPeriod    float64
-	bufferAnalyzer           *bottleneckanalysis.BufferAnalyzer
+	useParallelEngine     bool
+	debugISA              bool
+	traceVis              bool
+	visTraceStartTime     sim.VTimeInSec
+	visTraceEndTime       sim.VTimeInSec
+	traceNoC              bool
+	traceMem              bool
+	numGPU                int
+	useMagicMemoryCopy    bool
+	log2PageSize          uint64
+	engine                sim.Engine
+	bufferAnalyzingDir    string
+	bufferAnalyzingPeriod float64
+	bufferAnalyzer        *bottleneckanalysis.BufferAnalyzer
 
 	tileWidth  int
 	tileHeight int
@@ -70,24 +70,38 @@ func (b WaferScaleGPUPlatformBuilder) WithISADebugging() WaferScaleGPUPlatformBu
 	return b
 }
 
-// WithVisTracing lets the platform to record traces for visualization purposes.
+// WithVisTracing lets the platform to record traces for general visualization.
 func (b WaferScaleGPUPlatformBuilder) WithVisTracing() WaferScaleGPUPlatformBuilder {
 	b.traceVis = true
 	return b
 }
 
-// WithPartialVisTracing lets the platform to record traces for visualization
-// purposes. The trace will only be collected from the start time to the end
-// time.
+// WithPartialVisTracing lets the platform to record traces for general
+// visualization. The trace will only be collected from the start time to the
+// end time.
 func (b WaferScaleGPUPlatformBuilder) WithPartialVisTracing(
 	start, end sim.VTimeInSec,
-	disableNoCTracer bool,
 ) WaferScaleGPUPlatformBuilder {
 	b.traceVis = true
 	b.visTraceStartTime = start
 	b.visTraceEndTime = end
-	b.visTraceDisableNoCTracer = disableNoCTracer
+	return b
+}
 
+// WithNoCTracing lets the platform to record traces for NoC visualization.
+func (b WaferScaleGPUPlatformBuilder) WithNoCTracing() WaferScaleGPUPlatformBuilder {
+	b.traceNoC = true
+	return b
+}
+
+// WithPartialNoCTracing lets the platform to record traces for NoC visualization
+// The trace will only be collected from the start time to the end time.
+func (b WaferScaleGPUPlatformBuilder) WithPartialNoCTracing(
+	start, end sim.VTimeInSec,
+) WaferScaleGPUPlatformBuilder {
+	b.traceNoC = true
+	b.visTraceStartTime = start
+	b.visTraceEndTime = end
 	return b
 }
 
@@ -330,6 +344,7 @@ func (b *WaferScaleGPUPlatformBuilder) createGPUBuilder(
 	}
 
 	gpuBuilder = b.setVisTracer(gpuDriver, gpuBuilder)
+	gpuBuilder = b.setNoCTracer(gpuBuilder)
 	gpuBuilder = b.setMemTracer(gpuBuilder)
 	gpuBuilder = b.setISADebugger(gpuBuilder)
 
@@ -347,6 +362,54 @@ func (b *WaferScaleGPUPlatformBuilder) setISADebugger(
 	return gpuBuilder
 }
 
+func (b *WaferScaleGPUPlatformBuilder) setVisTracer(
+	gpuDriver *driver.Driver,
+	gpuBuilder WaferScaleGPUBuilder,
+) WaferScaleGPUBuilder {
+	if !b.traceVis {
+		return gpuBuilder
+	}
+
+	mySQLTracer := tracing.NewMySQLTracerWithTimeRange(
+		b.engine,
+		b.visTraceStartTime,
+		b.visTraceEndTime,
+	)
+	mySQLTracer.Init()
+	tracing.CollectTrace(gpuDriver, mySQLTracer)
+
+	// Use CSV tracer to dump all tracing data into a file, with similar format to
+	// MySQL tracer. The mesh networking data will be saves meanwhile.
+
+	// tracer := tracing.NewCSVTracer()
+	// tracer.Init()
+
+	gpuBuilder = gpuBuilder.WithVisTracer(mySQLTracer)
+	return gpuBuilder
+}
+
+func (b *WaferScaleGPUPlatformBuilder) setNoCTracer(
+	gpuBuilder WaferScaleGPUBuilder,
+) WaferScaleGPUBuilder {
+	if !b.traceNoC {
+		return gpuBuilder
+	}
+
+	nocTracer := noctracing.NewMeshNetworkTracerWithTimeRange(
+		b.engine,
+		b.visTraceStartTime,
+		b.visTraceEndTime,
+		16,
+		uint16(b.tileWidth),
+		uint16(b.tileHeight),
+		*nocTracingOutputDir,
+	)
+	nocTracer.Init()
+
+	gpuBuilder = gpuBuilder.WithNoCTracer(nocTracer)
+	return gpuBuilder
+}
+
 func (b *WaferScaleGPUPlatformBuilder) setMemTracer(
 	gpuBuilder WaferScaleGPUBuilder,
 ) WaferScaleGPUBuilder {
@@ -361,48 +424,6 @@ func (b *WaferScaleGPUPlatformBuilder) setMemTracer(
 	logger := log.New(file, "", 0)
 	memTracer := memtraces.NewTracer(logger, b.engine)
 	gpuBuilder = gpuBuilder.WithMemTracer(memTracer)
-	return gpuBuilder
-}
-
-func (b *WaferScaleGPUPlatformBuilder) setVisTracer(
-	gpuDriver *driver.Driver,
-	gpuBuilder WaferScaleGPUBuilder,
-) WaferScaleGPUBuilder {
-	if !b.traceVis {
-		return gpuBuilder
-	}
-
-	var tracer tracing.Tracer
-	if !b.visTraceDisableNoCTracer {
-		nocTracer := noctracing.NewMeshNetworkTracerWithTimeRange(
-			b.engine,
-			b.visTraceStartTime,
-			b.visTraceEndTime,
-			16,
-			uint16(b.tileWidth),
-			uint16(b.tileHeight),
-		)
-		nocTracer.Init()
-		tracer = nocTracer
-	} else {
-		mySQLTracer := tracing.NewMySQLTracerWithTimeRange(
-			b.engine,
-			b.visTraceStartTime,
-			b.visTraceEndTime,
-		)
-		mySQLTracer.Init()
-		tracer = mySQLTracer
-	}
-
-	// Use CSV tracer to dump all tracing data into a file, with similar format to
-	// MySQL tracer. The mesh networking data will be saves meanwhile.
-
-	// tracer := tracing.NewCSVTracer()
-	// tracer.Init()
-
-	tracing.CollectTrace(gpuDriver, tracer)
-
-	gpuBuilder = gpuBuilder.WithVisTracer(tracer)
 	return gpuBuilder
 }
 

@@ -32,19 +32,20 @@ type meshBuilder struct {
 	cp      *cp.CommandProcessor
 	l2TLB   *tlb.TLB
 
-	engine                sim.Engine
-	freq                  sim.Freq
-	memAddrOffset         uint64
-	log2CacheLineSize     uint64
-	log2PageSize          uint64
-	visTracer             tracing.Tracer
-	memTracer             tracing.Tracer
-	enableOnlyMeshTracing bool
-	enableISADebugging    bool
-	enableMemTracing      bool
-	enableVisTracing      bool
-	monitor               *monitoring.Monitor
-	bufferAnalyzer        *bottleneckanalysis.BufferAnalyzer
+	engine             sim.Engine
+	freq               sim.Freq
+	memAddrOffset      uint64
+	log2CacheLineSize  uint64
+	log2PageSize       uint64
+	visTracer          tracing.Tracer
+	nocTracer          tracing.Tracer
+	memTracer          tracing.Tracer
+	enableISADebugging bool
+	enableVisTracing   bool
+	enableNoCTracing   bool
+	enableMemTracing   bool
+	monitor            *monitoring.Monitor
+	bufferAnalyzer     *bottleneckanalysis.BufferAnalyzer
 
 	tileWidth                      int
 	tileHeight                     int
@@ -126,24 +127,25 @@ func (b meshBuilder) WithISADebugging() meshBuilder {
 	return b
 }
 
-func (b meshBuilder) withOnlyMeshTracing() meshBuilder {
-	b.enableOnlyMeshTracing = true
-	return b
-}
-
-func (b meshBuilder) withVisTracer(t tracing.Tracer) meshBuilder {
+func (b meshBuilder) WithVisTracer(t tracing.Tracer) meshBuilder {
 	b.enableVisTracing = true
 	b.visTracer = t
 	return b
 }
 
-func (b meshBuilder) withMemTracer(t tracing.Tracer) meshBuilder {
+func (b meshBuilder) WithNoCTracer(t tracing.Tracer) meshBuilder {
+	b.enableNoCTracing = true
+	b.nocTracer = t
+	return b
+}
+
+func (b meshBuilder) WithMemTracer(t tracing.Tracer) meshBuilder {
 	b.enableMemTracing = true
 	b.memTracer = t
 	return b
 }
 
-func (b meshBuilder) withMonitor(monitor *monitoring.Monitor) meshBuilder {
+func (b meshBuilder) WithMonitor(monitor *monitoring.Monitor) meshBuilder {
 	b.monitor = monitor
 	return b
 }
@@ -262,6 +264,10 @@ func (b *meshBuilder) Build(
 		m.meshConn = m.meshConn.WithVisTracer(b.visTracer)
 	}
 
+	if b.enableNoCTracing {
+		m.meshConn = m.meshConn.WithNoCTracer(b.nocTracer)
+	}
+
 	if b.bufferAnalyzer != nil {
 		m.meshConn = m.meshConn.WithBufferAnalyzer(b.bufferAnalyzer)
 	}
@@ -290,7 +296,7 @@ func (b *meshBuilder) buildTiles(m *mesh) {
 		tileBuilder = tileBuilder.withIsaDebugging()
 	}
 
-	if b.enableVisTracing && !b.enableOnlyMeshTracing {
+	if b.enableVisTracing {
 		tileBuilder = tileBuilder.withVisTracer(b.visTracer)
 	}
 

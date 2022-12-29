@@ -11,5 +11,6 @@ require (
 // Make sure mgpusim is on the latest commit of
 // `290-command-processor-reuses-todma-sender-port` branch
 replace gitlab.com/akita/mgpusim/v3 => ../mgpusim
+replace gitlab.com/akita/noc/v3 => ../noc
 
 go 1.16

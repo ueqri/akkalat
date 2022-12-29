@@ -27,14 +27,15 @@ type WaferScaleGPUBuilder struct {
 	log2CacheLineSize              uint64
 	log2MemoryBankInterleavingSize uint64
 
-	enableOnlyMeshTracing bool
-	enableISADebugging    bool
-	enableMemTracing      bool
-	enableVisTracing      bool
-	visTracer             tracing.Tracer
-	memTracer             tracing.Tracer
-	monitor               *monitoring.Monitor
-	bufferAnalyzer        *bottleneckanalysis.BufferAnalyzer
+	enableISADebugging bool
+	enableVisTracing   bool
+	enableNoCTracing   bool
+	enableMemTracing   bool
+	visTracer          tracing.Tracer
+	nocTracer          tracing.Tracer
+	memTracer          tracing.Tracer
+	monitor            *monitoring.Monitor
+	bufferAnalyzer     *bottleneckanalysis.BufferAnalyzer
 
 	gpuName string
 	gpu     *GPU
@@ -66,7 +67,6 @@ func MakeWaferScaleGPUBuilder() WaferScaleGPUBuilder {
 		log2PageSize:                   12,
 		log2MemoryBankInterleavingSize: 12,
 		memorySize:                     4 * mem.GB,
-		enableOnlyMeshTracing:          true,
 	}
 	return b
 }
@@ -123,6 +123,15 @@ func (b WaferScaleGPUBuilder) WithVisTracer(
 ) WaferScaleGPUBuilder {
 	b.enableVisTracing = true
 	b.visTracer = t
+	return b
+}
+
+// WithNoCTracer applies a tracer to trace all the tasks of the Network-on-Chip.
+func (b WaferScaleGPUBuilder) WithNoCTracer(
+	t tracing.Tracer,
+) WaferScaleGPUBuilder {
+	b.enableNoCTracing = true
+	b.nocTracer = t
 	return b
 }
 
@@ -286,9 +295,6 @@ func (b *WaferScaleGPUBuilder) buildMesh(name string) {
 		WithMemAddrOffset(b.memAddrOffset).
 		withLog2CachelineSize(b.log2CacheLineSize).
 		withLog2PageSize(b.log2PageSize).
-		withVisTracer(b.visTracer).
-		withMemTracer(b.memTracer).
-		withMonitor(b.monitor).
 		withTileWidth(b.tileWidth).
 		withTileHeight(b.tileHeight).
 		withLog2MemoryBankInterleavingSize(b.log2MemoryBankInterleavingSize).
@@ -296,8 +302,20 @@ func (b *WaferScaleGPUBuilder) buildMesh(name string) {
 		withPageMigrationController(b.pageMigrationController).
 		withGlobalStorage(b.globalStorage)
 
-	if b.enableOnlyMeshTracing {
-		meshBuilder = meshBuilder.withOnlyMeshTracing()
+	if b.enableISADebugging {
+		meshBuilder = meshBuilder.WithISADebugging()
+	}
+
+	if b.enableVisTracing {
+		meshBuilder = meshBuilder.WithVisTracer(b.visTracer)
+	}
+
+	if b.enableNoCTracing {
+		meshBuilder = meshBuilder.WithNoCTracer(b.nocTracer)
+	}
+
+	if b.monitor != nil {
+		meshBuilder = meshBuilder.WithMonitor(b.monitor)
 	}
 
 	if b.bufferAnalyzer != nil {
@@ -341,7 +359,7 @@ func (b *WaferScaleGPUBuilder) buildDMAEngine() {
 		b.engine,
 		nil)
 
-	if b.enableVisTracing && !b.enableOnlyMeshTracing {
+	if b.enableVisTracing {
 		tracing.CollectTrace(b.dmaEngine, b.visTracer)
 	}
 
@@ -387,7 +405,7 @@ func (b *WaferScaleGPUBuilder) buildL2TLB() {
 	b.l2TLB = builder.Build(fmt.Sprintf("%s.L2TLB", b.gpuName))
 	b.gpu.L2TLBs = append(b.gpu.L2TLBs, b.l2TLB)
 
-	if b.enableVisTracing && !b.enableOnlyMeshTracing {
+	if b.enableVisTracing {
 		tracing.CollectTrace(b.l2TLB, b.visTracer)
 	}
 

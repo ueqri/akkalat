@@ -34,9 +34,7 @@ var parallelFlag = flag.Bool("parallel", false,
 	"Run the simulation in parallel.")
 var isaDebug = flag.Bool("debug-isa", false, "Generate the ISA debugging file.")
 var visTracing = flag.Bool("trace-vis", false,
-	"Generate trace for visualization purposes.")
-var visTracingDisableNoCTracer = flag.Bool("trace-vis-disable-noc-tracer", false,
-	"Disable NoC Tracer for visualization purposes, i.e., only use MySQL Tracer.")
+	"Generate trace for general visualization.")
 var visTraceStartTime = flag.Float64("trace-vis-start", -1,
 	"The starting time to collect visualization traces. A negative number "+
 		"represents starting from the beginning.")
@@ -47,6 +45,11 @@ var verifyFlag = flag.Bool("verify", false, "Verify the emulation result.")
 var memTracing = flag.Bool("trace-mem", false, "Generate memory trace")
 var instCountReportFlag = flag.Bool("report-inst-count", false,
 	"Report the number of instructions executed in each compute unit.")
+
+var nocTracing = flag.Bool("trace-noc", false,
+	"Generate trace for Network-on-Chips visualization.")
+var nocTracingOutputDir = flag.String("trace-noc-output",
+	"meshmetrics", "Output directory of NoC tracing metrics.")
 
 // var cacheLatencyReportFlag = flag.Bool("report-cache-latency", false,
 // 	"Report the average cache latency.")
@@ -262,6 +265,10 @@ func (r *Runner) buildEmuPlatform() {
 		b = b.WithVisTracing()
 	}
 
+	if *nocTracing {
+		b = b.WithNoCTracing()
+	}
+
 	if *memTracing {
 		b = b.WithMemTracing()
 	}
@@ -289,7 +296,13 @@ func (r *Runner) buildTimingPlatform() {
 		b = b.WithPartialVisTracing(
 			sim.VTimeInSec(*visTraceStartTime),
 			sim.VTimeInSec(*visTraceEndTime),
-			*visTracingDisableNoCTracer,
+		)
+	}
+
+	if *nocTracing {
+		b = b.WithPartialNoCTracing(
+			sim.VTimeInSec(*visTraceStartTime),
+			sim.VTimeInSec(*visTraceEndTime),
 		)
 	}
 
@@ -527,11 +540,7 @@ func (r *Runner) addRDMAEngineTracer() {
 
 				isFromOutside := strings.Contains(
 					task.Detail.(sim.Msg).Meta().Src.Name(), "RDMA")
-				if !isFromOutside {
-					return false
-				}
-
-				return true
+				return isFromOutside
 			})
 		t.outgoingTracer = tracing.NewAverageTimeTracer(
 			r.platform.Engine,
@@ -542,11 +551,7 @@ func (r *Runner) addRDMAEngineTracer() {
 
 				isFromOutside := strings.Contains(
 					task.Detail.(sim.Msg).Meta().Src.Name(), "RDMA")
-				if isFromOutside {
-					return false
-				}
-
-				return true
+				return !isFromOutside
 			})
 
 		tracing.CollectTrace(t.rdmaEngine, t.incomingTracer)
@@ -564,7 +569,7 @@ func (r *Runner) addDRAMTracer() {
 	for _, gpu := range r.platform.GPUs {
 		for _, dram := range gpu.MemControllers {
 			t := dramTransactionCountTracer{}
-			t.dram = dram.(TraceableComponent)
+			t.dram = dram
 			t.tracer = newDramTracer()
 
 			tracing.CollectTrace(t.dram, t.tracer)

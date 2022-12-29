@@ -294,6 +294,10 @@ func (b *tileBuilder) buildMemory(t *tile) {
 	t.mem = idealmemcontroller.New(memName, b.engine, 1)
 	t.mem.Latency = b.memLatency
 	t.mem.Storage = b.globalStorage
+
+	if b.visTracer != nil {
+		tracing.CollectTrace(t.mem, b.visTracer)
+	}
 }
 
 func (b *tileBuilder) buildL1VReorderBuffers(t *tile) {

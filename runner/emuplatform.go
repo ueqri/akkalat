@@ -14,6 +14,7 @@ type EmuBuilder struct {
 	useParallelEngine  bool
 	debugISA           bool
 	traceVis           bool
+	traceNoC           bool
 	traceMem           bool
 	numGPU             int
 	log2PageSize       uint64
@@ -42,9 +43,15 @@ func (b EmuBuilder) WithISADebugging() EmuBuilder {
 	return b
 }
 
-// WithVisTracing lets the platform to record traces for visualization purposes.
+// WithVisTracing lets the platform to record traces for general visualization.
 func (b EmuBuilder) WithVisTracing() EmuBuilder {
 	b.traceVis = true
+	return b
+}
+
+// WithNoCTracing lets the platform to record traces for NoC visualization.
+func (b EmuBuilder) WithNoCTracing() EmuBuilder {
+	b.traceNoC = true
 	return b
 }
 
