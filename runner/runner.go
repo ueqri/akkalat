@@ -24,8 +24,8 @@ import (
 )
 
 // Command options especially for mesh networking.
-var tileWidth = flag.Int("width", 128, "Width of the tiles in a mesh.")
-var tileHeight = flag.Int("height", 128, "Height of the tiles in a mesh.")
+var tileWidth = flag.Int("tile-width", 128, "Width of the tiles in a mesh.")
+var tileHeight = flag.Int("tile-height", 128, "Height of the tiles in a mesh.")
 
 var timingFlag = flag.Bool("timing", false, "Run detailed timing simulation.")
 var maxInstCount = flag.Uint64("max-inst", 0,
@@ -147,6 +147,7 @@ type Runner struct {
 }
 
 // ParseFlag applies the runner flag to runner object
+//
 //nolint:gocyclo
 func (r *Runner) ParseFlag() *Runner {
 	if *parallelFlag {
