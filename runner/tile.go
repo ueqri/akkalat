@@ -55,6 +55,8 @@ type tileBuilder struct {
 	visTracer     tracing.Tracer
 	memTracer     tracing.Tracer
 	globalStorage *mem.Storage
+
+	connectionCount int
 }
 
 func makeTileBuilder() tileBuilder {
@@ -248,11 +250,14 @@ func (b *tileBuilder) connectWithDirectConnection(
 	port1, port2 sim.Port,
 	bufferSize int,
 ) {
-	name := fmt.Sprintf("%s-%s", port1.Name(), port2.Name())
+	name := fmt.Sprintf("%s.Conn[%d]", b.name, b.connectionCount)
+	b.connectionCount++
+
 	conn := sim.NewDirectConnection(
 		name,
 		b.engine, b.freq,
 	)
+
 	conn.PlugIn(port1, bufferSize)
 	conn.PlugIn(port2, bufferSize)
 }
@@ -261,11 +266,9 @@ func (b *tileBuilder) buildCU(t *tile) {
 	cuBuilder := cu.MakeBuilder().
 		WithEngine(b.engine).
 		WithFreq(b.freq).
-		WithExternalDecoder(b.decoder).
-		WithSIMDCount(1).
-		WithVGPRCount([]int{16384}).
-		WithSGPRCount(3200).
-		WithSIMDWidth(4).
+		// WithSIMDCount(1).
+		// WithVGPRCount([]int{16384}).
+		// WithSGPRCount(3200).
 		WithLog2CachelineSize(b.log2CacheLineSize)
 
 	cuName := fmt.Sprintf("%s.CU", b.name)

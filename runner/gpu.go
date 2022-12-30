@@ -56,6 +56,8 @@ type WaferScaleGPUBuilder struct {
 	mesh       *mesh
 	ToMesh     []sim.Port
 	l2TLB      *tlb.TLB
+
+	connectionCount int
 }
 
 // MakeWaferScaleGPUBuilder provides a GPU builder that can builds the Wafer-Scale GPU.
@@ -422,10 +424,14 @@ func (b *WaferScaleGPUBuilder) connectWithDirectConnection(
 	port1, port2 sim.Port,
 	bufferSize int,
 ) {
+	name := fmt.Sprintf("%s.Conn[%d]", b.gpuName, b.connectionCount)
+	b.connectionCount++
+
 	conn := sim.NewDirectConnection(
-		port1.Name()+"-"+port2.Name(),
+		name,
 		b.engine, b.freq,
 	)
+
 	conn.PlugIn(port1, bufferSize)
 	conn.PlugIn(port2, bufferSize)
 }

@@ -441,8 +441,13 @@ func (b *WaferScaleGPUPlatformBuilder) createGPU(
 	gpu := gpuBuilder.
 		WithMemAddrOffset(memAddrOffset).
 		Build(name, uint64(index))
-	gpuDriver.RegisterGPU(gpu.Domain.GetPortByName("CommandProcessor"),
-		4*mem.GB)
+	gpuDriver.RegisterGPU(
+		gpu.Domain.GetPortByName("CommandProcessor"),
+		driver.DeviceProperties{
+			CUCount:  b.tileHeight * b.tileWidth,
+			DRAMSize: 4 * mem.GB,
+		},
+	)
 	gpu.CommandProcessor.Driver = gpuDriver.GetPortByName("GPU")
 
 	b.configRDMAEngine(gpu, rdmaAddressTable)
